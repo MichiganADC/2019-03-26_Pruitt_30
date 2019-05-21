@@ -53,6 +53,39 @@ fields_u3_b6_raw <-
     , "gds"
   ) %>% c(paste0("fu_", .), paste0("tele_", .))
 
+fields_u3_c2_raw <-
+  c(
+    "mocacomp"
+    , "mocareas"
+    , "mocaloc"
+    , "mocalan"
+    , "mocavis"
+    , "mocahear"
+    , "mocatots"
+    , "mocatrai"
+    , "mocacube"
+    , "mocacloc"
+    , "mocaclon"
+    , "mocacloh"
+    , "mocanami"
+    , "mocaregi"
+    , "mocadigi"
+    , "mocalett"
+    , "mocaser7"
+    , "mocarepe"
+    , "mocaflue"
+    , "mocaabst"
+    , "mocarecn"
+    , "mocarecc"
+    , "mocarecr"
+    , "mocaordt"
+    , "mocaormo"
+    , "mocaoryr"
+    , "mocaordy"
+    , "mocaorpl"
+    , "mocaorct"
+  ) %>% c(paste0("fu_", .), paste0("tele_", .))
+
 fields_u3_d1_raw <-
   c(
     "normcog"
@@ -102,6 +135,7 @@ fields_u3_raw <-
     fields_u3_hd_raw
     , fields_u3_a1_raw
     , fields_u3_b6_raw
+    , fields_u3_c2_raw
     , fields_u3_d1_raw
     , fields_u3_ls_raw
   )
@@ -131,9 +165,19 @@ fields_ms_dm_raw <-
     , "birth_date"
   )
 
+fields_ms_mri_raw <-
+  c(
+    "mri_sub_id"
+    , "seq_num"
+    , "mri_completed"
+    , "mri_date"
+    , "server_status"
+  )
+
 fields_ms_raw <- 
   c(
     fields_ms_dm_raw
+    , fields_ms_mri_raw
   )
 
 fields_ms <- fields_ms_raw %>% paste(collapse = ",")
@@ -151,9 +195,7 @@ json_ms <-
                                        "[subject_id] <= 'UM00009999'",
                                        " AND ",
                                        "[exam_date]  >= '2017-03-01'",
-                                       ")"
-                  )
-  )
+                                       ")"))
 df_ms <- jsonlite::fromJSON(json_ms) %>% as_tibble() %>% na_if("")
 
 
@@ -163,8 +205,8 @@ df_ms <- jsonlite::fromJSON(json_ms) %>% as_tibble() %>% na_if("")
 
 # _ _ UDS 3 ----
 
-rel_fields <- names(df_u3_cln) %>%
-  str_replace_all("ptid|form_date|dob", NA_character_) %>%
+rel_fields <- names(df_u3) %>%
+  str_replace_all("ptid|form_date|dob|redcap_event_name", NA_character_) %>%
   stringi::stri_remove_empty_na()
 
 df_u3_cln <- df_u3 %>% 
@@ -250,8 +292,18 @@ df_u3_ms <-
 df_u3_ms_mut <- df_u3_ms %>% 
   # Calculate age
   calculate_age(dob, form_date) %>% 
+  # Mutate `mri_dir_name`
+  mutate(mri_dir_name = case_when(
+    !is.na(mri_sub_id) & !is.na(seq_num) ~ paste0(mri_sub_id, "_0", seq_num),
+    !is.na(mri_sub_id) & is.na(seq_num) ~ paste0(mri_sub_id, "_0????"),
+    TRUE ~ NA_character_
+  )) %>%
   # Reorder initial fields
-  select(ptid, form_date, dob, starts_with("age"), madc_dx, everything()) %>% 
+  select(ptid, form_date, dob, starts_with("age"), madc_dx, 
+         mri_sub_id, seq_num, mri_completed, 
+         mri_date, server_status, mri_sub_id,
+         mri_dir_name,
+         everything()) %>% 
   select(-dob, -age_years, -age_units)
 
 
