@@ -3,11 +3,9 @@
 .RData
 .Ruserdata
 .DS_Store
+
 *.csv
-*.tsv
 *.xls*
+*.txt
 *.doc*
 *.pdf
-*.txt
-*.eml
-*.sh
